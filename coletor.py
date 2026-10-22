@@ -51,8 +51,8 @@ def ler_readmes_alterados(repo: Path, commits: list[Commit],
         arquivo = repo / caminho
         if not arquivo.exists():
             continue
-        conteudo = arquivo.read_text(encoding="utf-8")
-        if conteudo in vistos:
+        conteudo = ler_novidades(repo, commits, caminho)
+        if not conteudo.strip() or conteudo in vistos:
             continue
         vistos.add(conteudo)
         readmes[caminho] = conteudo[:limite]
@@ -69,4 +69,22 @@ def montar_material(repo: Path, commits: list[Commit],
     for caminho, conteudo in readmes.items():
         partes += ["", f"## Arquivo {caminho}", conteudo]
     return "\n".join(partes)
+
+ARVORE_VAZIA = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+def ler_novidades(repo: Path, commits: list[Commit], caminho: str) -> str:
+    mais_antigo = commits[-1].hash
+    base = f"{mais_antigo}^"
+    tem_pai = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", base],
+        capture_output=True,
+    ).returncode == 0
+    if not tem_pai:
+        base = ARVORE_VAZIA
+    diff = subprocess.run(
+        ["git", "-C", str(repo), "diff", base, "HEAD", "--", caminho],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return "\n".join(l[1:] for l in diff.splitlines()
+                     if l.startswith("+") and not l.startswith("+++"))
 

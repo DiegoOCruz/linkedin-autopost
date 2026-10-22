@@ -23,7 +23,7 @@ flowchart LR
 
 O pipeline tem quatro etapas, cada uma num módulo próprio:
 
-**1. Coletor** (`coletor.py`). Encontra os repositórios Git no diretório de projetos, lê os commits dos últimos 7 dias com `git log`, identifica os arquivos alterados em cada commit e carrega os READMEs modificados. READMEs com conteúdo idêntico são descartados. Tudo é montado num único material, com os commits em ordem cronológica.
+**1. Coletor** (`coletor.py`). Encontra os repositórios Git no diretório de projetos, lê os commits dos últimos 7 dias com `git log` e identifica os arquivos alterados em cada commit. Dos READMEs modificados, extrai apenas as linhas adicionadas na semana, via `git diff`. Tudo é montado num único material, com os commits em ordem cronológica.
 
 **2. Extrator** (`extrator.py`). Um LLM lê o material e devolve os fatos relevantes para um post, cada um classificado como `construcao`, `descoberta`, `problema` ou `proximo_passo`. A saída é forçada num JSON Schema, e a temperatura é zero, porque aqui o objetivo é fidelidade ao texto, e não criatividade.
 
@@ -51,6 +51,8 @@ O pipeline tem quatro etapas, cada uma num módulo próprio:
 
 **Humano no circuito.** Automatizar a publicação no LinkedIn esbarra nos termos de uso da plataforma e, principalmente, na qualidade: um post com um resultado inventado no meu perfil é pior do que não postar.
 
+**Só o que mudou na semana.** Na primeira versão, o coletor lia os READMEs alterados inteiros. Como meus READMEs acumulam a história de todos os módulos, descobertas de semanas atrás voltavam como fatos novos. Agora o coletor compara o estado do README antes do primeiro commit da semana com o estado atual e envia ao modelo só as linhas adicionadas.
+
 ## O que aprendi construindo
 
 **O redator extrapola de forma plausível.** Mesmo com a instrução "use apenas os fatos fornecidos", o modelo às vezes afirmava coisas que eu não fiz, como ter "resolvido" um problema que eu só tinha descoberto. É exatamente o comportamento que documentei no meu [estudo de RAG](https://github.com/DiegoOCruz/estudos-ia), agora aparecendo no meu próprio pipeline. Por isso a revisão humana é parte do projeto, e não um detalhe.
@@ -60,6 +62,8 @@ O pipeline tem quatro etapas, cada uma num módulo próprio:
 **Modelos de linguagem não contam caracteres.** Um limite de 2000 caracteres gerou posts de quase 3000. Limites em palavras funcionam melhor, e a medição final é feita no código.
 
 **Ajustar prompt tem retorno decrescente.** A partir de certo ponto, cada rodada trocava uns erros por outros. Gerar variações e revisar com um critério claro rendeu mais do que continuar refinando instruções.
+
+**O modelo pode acabar imitando a si mesmo.** Salvei por engano um rascunho gerado, sem edição, na pasta de exemplos de estilo. Nas semanas seguintes, o redator passou a copiar parágrafos inteiros dele. Isso aparecia como um post idêntico, palavra por palavra, em semanas diferentes, algo improvável com temperatura 0.7. Duas mudanças resolveram: só entra em `estilo/` o texto que eu publiquei depois de editar, e cada exemplo vai no prompt entre tags `<exemplo>`, com a instrução de imitar como eu escrevo, e não sobre o que escrevo.
 
 ## Estrutura
 

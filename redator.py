@@ -46,13 +46,15 @@ def redigir_post(fatos_por_repo: dict[str, list[Fato]], angulo: str) -> str:
 
 def carregar_exemplos() -> str:
     arquivos = sorted(DIRETORIO_ESTILO.glob("*.md"), reverse=True)[:MAX_EXEMPLOS]
-    return "\n\n---\n\n".join(a.read_text(encoding="utf-8") for a in arquivos)
+    return "\n\n".join(f"<exemplo>\n{a.read_text(encoding='utf-8')}\n</exemplo>"
+                       for a in arquivos)
 
 def montar_prompt() -> str:
     exemplos = carregar_exemplos()
     if not exemplos:
         return PROMPT
     return (PROMPT + "\n\nA seguir, textos escritos pelo próprio desenvolvedor, "
-            "que podem ser de outros gêneros (e-mails, mensagens). Imite o tom, "
-            "o ritmo e o vocabulário deles, adaptando ao formato de post. "
-            "NÃO imite o conteúdo:\n\n" + exemplos)
+            "entre as tags <exemplo>. Eles mostram COMO ele escreve, e não SOBRE O QUE "
+            "escrever. Imite o tom, o ritmo e o vocabulário. Nunca reutilize frases "
+            "dos exemplos nem mencione assuntos que não estejam nos fatos desta "
+            "semana.\n\n" + exemplos)
